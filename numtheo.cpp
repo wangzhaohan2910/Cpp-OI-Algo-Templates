@@ -54,18 +54,18 @@ namespace number_theory
         return b ? pair{exgcd(b, a % b, y, x), y -= a / b * x}.first : (x = 1, y = 0, a);
     }
 
-    inline int phi(int n)
+    inline int euler_phi(int n)
     {
         int ans{n};
         for (int i{2}; i * i <= n; i++)
             if (!(n % i))
             {
-                ans = ans * (i - 1) / i;
+                ans = ans / i * (i - 1);
                 while (!(n % i))
                     n /= i;
             }
         if (n > 1)
-            ans = ans * (n - 1) / n;
+            ans = ans / n * (n - 1);
         return ans;
     }
 

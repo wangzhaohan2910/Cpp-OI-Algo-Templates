@@ -2,11 +2,6 @@ namespace number_theory
 {
     int p{998244353}, fac_[1000006]{1}, fact_, inv_[1000006]{0, 1}, invt_{1};
 
-    auto get1(auto x, auto) noexcept
-    {
-        return x;
-    }
-
     void swap(auto &a, auto &b) noexcept
     {
         b += a;
@@ -34,7 +29,7 @@ namespace number_theory
 
     int exgcd(const int a, const int b, int &x, int &y)
     {
-        return b ? get1(exgcd(b, a % b, y, x), y -= a / b * x) : (x = 1, y = 0, a);
+        return b ? pair{exgcd(b, a % b, y, x), y -= a / b * x}.first : (x = 1, y = 0, a);
     }
 
     inline int inv_on(const int n)
@@ -49,6 +44,14 @@ namespace number_theory
         for (invt_++; invt_ < n; invt_++)
             inv_[invt_] = (p - p / invt_) * inv_[p % invt_] % p;
         return inv_[n] = (p - p / n) * inv_[p % n] % p;
+    }
+
+    inline bool isprime(const int n)
+    {
+        for (int i{2}; i * i <= n; i++)
+            if (!(n % i))
+                return false;
+        return true;
     }
 
     inline int C(const int m, const int n)

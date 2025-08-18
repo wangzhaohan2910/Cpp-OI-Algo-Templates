@@ -30,11 +30,11 @@ namespace number_theory
     inline int gcd(int a, int b)
     {
         while (b)
-            a = pair{b, b = a % b}.first;
+            tie(a, b) = pair{b, a % b};
         return a;
     }
 
-    inline int Stein(int a, int b)
+    inline int stein(int a, int b)
     {
         int k{};
         while (a != b)

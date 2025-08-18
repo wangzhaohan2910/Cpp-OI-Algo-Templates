@@ -4,9 +4,9 @@ namespace number_theory
 
     void swap(auto &a, auto &b) noexcept
     {
-        b += a;
-        a = b - a;
-        b -= a;
+        b ^= a;
+        a = b ^ a;
+        b ^= a;
     }
 
     inline int fac(const int n)
@@ -25,6 +25,28 @@ namespace number_theory
             if (b & 1)
                 r = r * a % p;
         return r;
+    }
+
+    inline int gcd(int a, int b)
+    {
+        while (b)
+            a = pair{b, b = a % b}.first;
+        return a;
+    }
+
+    inline int Stein(int a, int b)
+    {
+        int k{};
+        while (a != b)
+            if (!(a & 1) && !(b & 1))
+                a >>= 1, b >>= 1, k++;
+            else if (!(a & 1) && b & 1)
+                a >>= 1;
+            else if (a & 1 && !(b & 1))
+                b >>= 1;
+            else
+                tie(a, b) = pair{max(a, b) - min(a, b), min(a, b)};
+        return a << k;
     }
 
     int exgcd(const int a, const int b, int &x, int &y)

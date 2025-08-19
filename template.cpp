@@ -1,4 +1,5 @@
 #include<bits/extc++.h>
+// #define int long long
 using namespace std;
 using namespace __gnu_cxx;
 using namespace __gnu_pbds;

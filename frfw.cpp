@@ -1,96 +1,42 @@
-struct IO
+char buf[1 << 20], *p1, *p2;
+#define getchar() (p1 == p2 && (p2 = (p1 = buf) + fread(buf, 1, 1 << 20, stdin), p1 == p2) ? EOF : *p1++)
+inline void read(int &x)
 {
-#define MAXSIZE (1 << 20)
-#define isdigit(x) (x >= '0' && x <= '9')
-    char buf[MAXSIZE], *p1, *p2;
-    char pbuf[MAXSIZE], *pp;
-#if DEBUG
-#else
-    IO()
-        : p1(buf), p2(buf), pp(pbuf) {}
-
-    ~IO()
+    register bool f{true};
+    register char ch = getchar();
+    x ^= x;
+    while (ch < 48 || ch > 57)
     {
-        fwrite(pbuf, 1, pp - pbuf, stdout);
+        if (ch == 45)
+            f = false;
+        ch = getchar();
     }
-#endif
-    char gc()
+    while (ch > 47 && ch < 58)
+        x = (x << 3) + (x << 1) + (ch ^ 48), ch = getchar();
+    x *= (f << 1) - 1;
+}
+char obuf[1 << 20], *p3 = obuf;
+#define putchar(x) (p3 - obuf < 1 << 20) ? (*p3++ = x) : (fwrite(obuf, p3 - obuf, 1, stdout), p3 = obuf, *p3++ = x)
+inline void write(register int x)
+{
+    if (!x)
     {
-#if DEBUG  // 调试，可显示字符
-        return getchar();
-#endif
-        if (p1 == p2)
-            p2 = (p1 = buf) + fread(buf, 1, MAXSIZE, stdin);
-        return p1 == p2 ? ' ' : *p1++;
+        putchar(48);
+        return;
     }
-
-    void read(int &x)
+    static int_fast8_t c[20];
+    register int_fast64_t len{};
+    if (x < 0)
+        x = -x, putchar(45);
+    while (x)
+        c[len++] = x % 10 ^ 48, x /= 10;
+    while (len--)
+        putchar(c[len]);
+}
+struct _FAST_
+{
+    ~_FAST_()
     {
-        bool neg = false;
-        x = 0;
-        char ch = gc();
-        for (; !isdigit(ch); ch = gc())
-            if (ch == '-')
-                neg = true;
-        if (neg)
-            for (; isdigit(ch); ch = gc())
-                x = x * 10 + ('0' - ch);
-        else
-            for (; isdigit(ch); ch = gc())
-                x = x * 10 + (ch - '0');
+        fwrite(obuf, p3 - obuf, 1, stdout);
     }
-
-    void read(char *s)
-    {
-        char ch = gc();
-        for (; isspace(ch); ch = gc());
-        for (; !isspace(ch); ch = gc())
-            *s++ = ch;
-        *s = 0;
-    }
-
-    void read(char &c)
-    {
-        for (c = gc(); isspace(c); c = gc());
-    }
-
-    void push(const char &c)
-    {
-#if DEBUG  // 调试，可显示字符
-        putchar(c);
-#else
-        if (pp - pbuf == MAXSIZE)
-            fwrite(pbuf, 1, MAXSIZE, stdout), pp = pbuf;
-        *pp++ = c;
-#endif
-    }
-
-    void write(int x)
-    {
-        bool neg = false;
-        if (x < 0)
-        {
-            neg = true;
-            push('-');
-        }
-        static int sta[40];
-        int top = 0;
-        do
-        {
-            sta[top++] = x % 10;
-            x /= 10;
-        }
-        while (x);
-        if (neg)
-            while (top)
-                push('0' - sta[--top]);
-        else
-            while (top)
-                push('0' + sta[--top]);
-    }
-
-    void write(int x, char lastChar)
-    {
-        write(x), push(lastChar);
-    }
-} io;
+} _fast_;

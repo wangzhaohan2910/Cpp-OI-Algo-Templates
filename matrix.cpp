@@ -1,4 +1,4 @@
-int p;
+int p{1000000007};
 template <int a, int b>
 struct matrix: array<array<int, b>, a>
 {

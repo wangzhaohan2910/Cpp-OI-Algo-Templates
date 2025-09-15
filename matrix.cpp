@@ -1,31 +1,30 @@
-int p{1000000007};
-template <int a, int b>
-struct matrix: array<array<int, b>, a>
+class matrix
 {
-	template <int c>
-	matrix<a, c> operator*(const matrix<b, c>& rhs) const
-	{
-		matrix<a, c> res{};
-		for (int i{}; i < a; i++)
-			for (int j{}; j < b; j++)
-				for (int k{}; k < c; k++)
-                    if ((res[i][k] += (*this)[i][j] * rhs[j][k] % p) >= p)
-                        res[i][k] -= p;
-		return res;
-	}
-    matrix<a, b> pow(int n)
+    const int h, w;
+    int **r;
+    matrix(int h, int w)
+	: h{h}, w{w}, r{new int*[h]}
     {
-        if constexpr (a == b)
-        {
-        	matrix<a, a> res{}, m{*this};
-        	for (int i{}; i < a; i++)
-        		res[i][i] = 1;
-        	for (; n; m = m * m, n >>= 1)
-        		if (n & 1)
-        			res = res * m;
-        	return res;
-        }
-        else
-            return *this;
+	for (int i{}; i < h; i++)
+	    r[i] = new int[w];
     }
+    ~matrix()
+    {
+	for (int i{}; i < h; i++)
+	    delete[] r[i];
+	delete[] r;
+    }
+    matrix(const matrix& rhs)
+	: h{rhs.h}, w{rhs.w}, r{new int*[h]}
+    {
+	for (int i{}; i < h; i++)
+	    r[i] = new int[w],
+	    memcpy(r[i], rhs.r[i], w);
+    }
+    matrix(matrix&& rhs)
+	: h{rhs.h}, w{rhs.w}, r{rhs.r}
+    {
+	rhs.h = rhs.w = rhs.r = 0;
+    }
+    matrix operator*(const matrix& )
 };

@@ -4,14 +4,27 @@ struct matrix
     int h, w;
     int **r;
     matrix(int h, int w)
-    : h{h}, w{w}, r{new int*[h]}
+        : h{h}, w{w}, r{new int*[h]}
     {
         if (h && w)
             for (int i{}; i < h; i++)
                 r[i] = new int[w],
                 memset(r[i], 0, w * sizeof(int));
         else
-            r = (int **)(h = w = 0);
+            delete[] r, r = (int **)(h = w = 0);
+    }
+    matrix(const initializer_list<initializer_list<int>> &l)
+        : h{l.size()}, w{begin(l)->size()}, r{new int*[h]}
+    {
+        if (h && w)
+        {
+            auto it{begin(l)};
+            for (int i{}; i < h; it++, i++)
+                r[i] = new int[w],
+                copy(begin(*it), end(*it), r[i]);
+        }
+        else
+            delete[] r, r = (int **)(h = w = 0);
     }
     ~matrix()
     {

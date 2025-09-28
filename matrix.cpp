@@ -33,40 +33,49 @@ struct matrix
         delete[] r;
     }
     matrix(const matrix &rhs)
-    : h{rhs.h}, w{rhs.w}, r{new int*[h]}
+        : h{}, w{}, r{}
     {
-        for (int i{}; i < h; i++)
-            r[i] = new int[w],
-            memcpy(r[i], rhs.r[i], w * sizeof(int));
+        *this = rhs;
     }
     matrix(matrix &&rhs)
-    : h{rhs.h}, w{rhs.w}, r{rhs.r}
+        : h{}, w{}, r{}
     {
-        rhs.r = (int **)(rhs.h = rhs.w = 0);
+        *this = move(rhs);
     }
-    matrix& operator=(const matrix &rhs)
+
+    matrix &operator=(const matrix &rhs)
     {
-        for (int i{}; i < h; i++)
-            delete[] r[i];
-        delete[] r;
-        h = rhs.h;
-        w = rhs.w;
-        r = new int*[h];
-        for (int i{}; i < h; i++)
-             r[i] = new int[w],
-             memcpy(r[i], rhs.r[i], w * sizeof(int));
+        if (r != rhs.r)
+        {
+            for (int i{}; i < h; i++)
+                delete[] r[i];
+            delete[] r;
+            h = rhs.h;
+            w = rhs.w;
+            r = new int*[h];
+            for (int i{}; i < h; i++)
+                r[i] = new int[w],
+                memcpy(r[i], rhs.r[i], w * sizeof(int));
+        }
         return *this;
     }
-    matrix& operator=(matrix &&rhs)
+    matrix &operator=(matrix &&rhs)
     {
-        for (int i{}; i < h; i++)
-            delete[] r[i];
-        delete[] r;
-        h = rhs.h;
-        w = rhs.w;
-        r = rhs.r;
-        rhs.r = (int **)(rhs.h = rhs.w = 0);
+        if (r != rhs.r)
+        {
+            for (int i{}; i < h; i++)
+                delete[] r[i];
+            delete[] r;
+            h = rhs.h;
+            w = rhs.w;
+            r = rhs.r;
+            rhs.r = (int **)(rhs.h = rhs.w = 0);
+        }
         return *this;
+    }
+    int &operator()(int x, int y)
+    {
+        return this->r[x][y];
     }
     matrix operator*(const matrix &rhs)
     {
@@ -78,8 +87,8 @@ struct matrix
             for (int i{}; i < h; i++)
                 for (int j{}; j < w; j++)
                     for (int k{}; k < rhs.w; k++)
-                        m.r[i][k] += r[i][j] * rhs.r[j][k],
-                        m.r[i][k] %= p;
+                        m(i, k) += *this(i, j) * rhs(j, k),
+                        m(i, k) %= p;
             return m;
         }
     }

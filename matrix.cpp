@@ -106,3 +106,4 @@ struct matrix
         }
     }
 };
+// TODO: 用vector或直接new 一维数组或std::allocator（可能）

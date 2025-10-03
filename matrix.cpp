@@ -1,108 +1,70 @@
 struct matrix
 {
-    const static int p{1000000007};
-    int h, w;
-    int **r;
-    matrix(int h, int w)
-        : h{h}, w{w}, r{new int*[h]}
+    size_t h, w;
+    vector<int> data;
+    int *operator[](const size_t x)
     {
-        if (h && w)
-            for (int i{}; i < h; i++)
-                r[i] = new int[w],
-                memset(r[i], 0, w * sizeof(int));
-        else
-            delete[] r, r = (int **)(h = w = 0);
+        return data.data() + x * w;
     }
-    matrix(const initializer_list<initializer_list<int>> &l)
-        : h{l.size()}, w{begin(l)->size()}, r{new int*[h]}
+    const int *operator[](const size_t x) const
     {
-        if (h && w)
-        {
-            auto it{begin(l)};
-            for (int i{}; i < h; it++, i++)
-                r[i] = new int[w],
-                copy(begin(*it), end(*it), r[i]);
-        }
-        else
-            delete[] r, r = (int **)(h = w = 0);
+        return data.data() + x * w;
     }
-    ~matrix()
+    matrix(const size_t h, const size_t w) : h(h), w(w), data(h * w)
     {
-        for (int i{}; i < h; i++)
-            delete[] r[i];
-        delete[] r;
     }
-    matrix(const matrix &rhs)
-        : h{}, w{}, r{}
+    matrix(const initializer_list<initializer_list<int>> l) : h{l.size()}, w{begin(l)->size()}
     {
-        *this = rhs;
+        data.reserve(h * w);
+        for (const initializer_list<int> &x : l)
+            move(begin(x), end(x), back_inserter(data));
     }
-    matrix(matrix &&rhs)
-        : h{}, w{}, r{}
+    static matrix id(const size_t a)
     {
-        *this = move(rhs);
+        matrix res(a, a);
+        for (size_t i{}; i < a; i++)
+            res[i][i] = 1;
+        return res;
     }
-
-    matrix &operator=(const matrix &rhs)
+    static matrix row(initializer_list<int> l)
     {
-        if (r != rhs.r)
-        {
-            for (int i{}; i < h; i++)
-                delete[] r[i];
-            delete[] r;
-            h = rhs.h;
-            w = rhs.w;
-            r = new int*[h];
-            for (int i{}; i < h; i++)
-                r[i] = new int[w],
-                memcpy(r[i], rhs.r[i], w * sizeof(int));
-        }
-        return *this;
+        return {l};
     }
-    matrix &operator=(matrix &&rhs)
+    static matrix col(const initializer_list<int> l)
     {
-        if (r != rhs.r)
-        {
-            for (int i{}; i < h; i++)
-                delete[] r[i];
-            delete[] r;
-            h = rhs.h;
-            w = rhs.w;
-            r = rhs.r;
-            rhs.r = (int **)(rhs.h = rhs.w = 0);
-        }
-        return *this;
-    }
-    int &operator()(int x, int y)
-    {
-        return this->r[x][y];
-    }
-    matrix operator*(const matrix &rhs)
-    {
-        if (w != rhs.h)
-            return matrix(0, 0);
-        else
-        {
-            matrix m{h, rhs.w};
-            for (int i{}; i < h; i++)
-                for (int j{}; j < w; j++)
-                    for (int k{}; k < rhs.w; k++)
-                        m(i, k) += *this(i, j) * rhs(j, k),
-                        m(i, k) %= p;
-            return m;
-        }
-    }
-    matrix pow(int k, matrix res)
-    {
-        if (h != w)
-            return matrix(0, 0);
-        else
-        {
-            matrix m(*this);
-            for (; k; m = m * m, k >>= 1)
-                if (k & 1)
-                    res = res * m;
-            return res;
-        }
+        matrix res{l};
+        res.h = res.w;
+        res.w = 1;
+        return res;
     }
 };
+inline matrix operator*(const matrix &a, const matrix &b)
+{
+    if (a.w != b.h)
+        return {};
+    matrix res(a.h, b.w);
+    for (size_t i{}; i < a.h; i++)
+        for (size_t j{}; j < a.w; j++)
+            for (size_t k{}; k < b.w; k++)
+                res[i][k] += a[i][j] * b[j][k];
+    return res;
+}
+inline matrix &operator*=(matrix &a, const matrix &b)
+{
+    if (a.w != b.h)
+        return a;
+    return a = a * b;
+}
+inline matrix pow(matrix init, matrix base, size_t exp)
+{
+    if (init.w != base.h || base.h != base.w)
+        return {};
+    for (; exp; base *= base, exp >>= 1)
+        if (exp & 1)
+            init *= base;
+    return init;
+}
+inline matrix pow(const matrix &base, const size_t exp)
+{
+    return pow(matrix::id(base.h), base, exp);
+}

@@ -2,108 +2,55 @@ struct matrix
 {
     const static int p{1000000007};
     int h, w;
-    int **r;
-    matrix(int h, int w)
-        : h{h}, w{w}, r{new int*[h]}
+    vector<int> v;
+    matrix(const int &h, const int &w) : h(h), w(w), v(h * w) {}
+    matrix(initializer_list<initializer_list<int>> l) : h(l.size()), w(begin(l)->size())
     {
-        if (h && w)
-            for (int i{}; i < h; i++)
-                r[i] = new int[w],
-                memset(r[i], 0, w * sizeof(int));
-        else
-            delete[] r, r = (int **)(h = w = 0);
+        v.reserve(h * w);
+        for (const initializer_list<int> &x : l)
+            move(begin(x), end(x), back_inserter(v));
     }
-    matrix(const initializer_list<initializer_list<int>> &l)
-        : h{l.size()}, w{begin(l)->size()}, r{new int*[h]}
+    int *operator[](const int &x)
     {
-        if (h && w)
-        {
-            auto it{begin(l)};
-            for (int i{}; i < h; it++, i++)
-                r[i] = new int[w],
-                copy(begin(*it), end(*it), r[i]);
-        }
-        else
-            delete[] r, r = (int **)(h = w = 0);
+        return v.data() + x * w;
     }
-    ~matrix()
+    const int *operator[](const int &x) const
     {
-        for (int i{}; i < h; i++)
-            delete[] r[i];
-        delete[] r;
+        return v.data() + x * w;
     }
-    matrix(const matrix &rhs)
-        : h{}, w{}, r{}
+    friend matrix operator*(const matrix &lhs, const matrix &rhs)
     {
-        *this = rhs;
+        if (lhs.w != rhs.h)
+            return {};
+        matrix res(lhs.h, rhs.w);
+        for (int i{}; i < lhs.h; i++)
+            for (int j{}; j < lhs.w; j++)
+                for (int k{}; k < rhs.w; k++)
+                    res[i][k] += lhs[i][j] * rhs[j][k],
+                    res[i][k] %= p;
+        return res;
     }
-    matrix(matrix &&rhs)
-        : h{}, w{}, r{}
+    matrix &operator*=(const matrix &rhs) &
     {
-        *this = move(rhs);
+        return (*this) = (*this) * rhs;
     }
-
-    matrix &operator=(const matrix &rhs)
+    matrix pow(matrix rhs, int k)
     {
-        if (r != rhs.r)
-        {
-            for (int i{}; i < h; i++)
-                delete[] r[i];
-            delete[] r;
-            h = rhs.h;
-            w = rhs.w;
-            r = new int*[h];
-            for (int i{}; i < h; i++)
-                r[i] = new int[w],
-                memcpy(r[i], rhs.r[i], w * sizeof(int));
-        }
-        return *this;
+        if (w != rhs.h || rhs.h != rhs.w)
+            return {};
+        matrix res(*this);
+        for (; k; rhs *= rhs, k >>= 1)
+            if (k & 1)
+                res *= rhs;
+        return res;
     }
-    matrix &operator=(matrix &&rhs)
-    {
-        if (r != rhs.r)
-        {
-            for (int i{}; i < h; i++)
-                delete[] r[i];
-            delete[] r;
-            h = rhs.h;
-            w = rhs.w;
-            r = rhs.r;
-            rhs.r = (int **)(rhs.h = rhs.w = 0);
-        }
-        return *this;
-    }
-    int &operator()(int x, int y)
-    {
-        return this->r[x][y];
-    }
-    matrix operator*(const matrix &rhs)
-    {
-        if (w != rhs.h)
-            return matrix(0, 0);
-        else
-        {
-            matrix m{h, rhs.w};
-            for (int i{}; i < h; i++)
-                for (int j{}; j < w; j++)
-                    for (int k{}; k < rhs.w; k++)
-                        m(i, k) += *this(i, j) * rhs(j, k),
-                        m(i, k) %= p;
-            return m;
-        }
-    }
-    matrix pow(int k, matrix res)
+    matrix pow(int k)
     {
         if (h != w)
-            return matrix(0, 0);
-        else
-        {
-            matrix m(*this);
-            for (; k; m = m * m, k >>= 1)
-                if (k & 1)
-                    res = res * m;
-            return res;
-        }
+            return {};
+        matrix res(h, w);
+        for (int i{}; i < h; i++)
+            res[i][i] = 1;
+        return res.pow(*this, k);
     }
 };
-// TODO: 用vector或直接new 一维数组或std::allocator（可能）

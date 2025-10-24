@@ -51,6 +51,6 @@ struct matrix
         matrix res(h, w);
         for (int i{}; i < h; i++)
             res[i][i] = 1;
-            return res.pow(*this, k);
+        return res.pow(*this, k);
     }
 };

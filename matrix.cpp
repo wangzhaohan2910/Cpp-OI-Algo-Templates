@@ -10,15 +10,15 @@ struct matrix
         for (const initializer_list<int> &x : l)
             move(begin(x), end(x), back_inserter(v));
     }
-    int *operator[](const int &x)
+    [[nodiscard]] int *operator[](const int &x)
     {
         return v.data() + x * w;
     }
-    const int *operator[](const int &x) const
+    [[nodiscard]] const int *operator[](const int &x) const
     {
         return v.data() + x * w;
     }
-    friend matrix operator*(const matrix &lhs, const matrix &rhs)
+    [[nodiscard]] friend matrix operator*(const matrix &lhs, const matrix &rhs)
     {
         if (lhs.w != rhs.h)
             return {};
@@ -34,7 +34,7 @@ struct matrix
     {
         return (*this) = (*this) * rhs;
     }
-    matrix pow(matrix rhs, int k)
+    [[nodiscard]] matrix pow(matrix rhs, int k)
     {
         if (w != rhs.h || rhs.h != rhs.w)
             return {};
@@ -44,7 +44,7 @@ struct matrix
                 res *= rhs;
         return res;
     }
-    matrix pow(int k)
+    [[nodiscard]] matrix pow(int k)
     {
         if (h != w)
             return {};

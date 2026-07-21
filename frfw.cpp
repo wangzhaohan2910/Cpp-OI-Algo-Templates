@@ -2,8 +2,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <cstdint>
-#include <type_traits>
 
 // ============================================================================
 // 底层类 MmapIO：仅提供构造、析构、get、put

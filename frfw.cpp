@@ -26,20 +26,15 @@ private:
     inline void flush()
     {
         if (__builtin_expect(out_ptr > out_buf, 0))
-        {
-            ::write(STDOUT_FILENO, out_buf, out_ptr - out_buf);
+            ::write(STDOUT_FILENO, out_buf, out_ptr - out_buf),
             out_ptr = out_buf;
-        }
     }
 
     inline void slide_window()
     {
         if (__builtin_expect(window_data != nullptr, 1))
-        {
-            munmap(const_cast<char*>(window_data), window_size);
+            munmap(const_cast<char*>(window_data), window_size),
             window_data = nullptr;
-        }
-
         if (__builtin_expect(window_pos >= file_size, 0))
         {
             window_ptr = window_end = nullptr;
@@ -51,17 +46,14 @@ private:
         void* p = mmap(nullptr, window_size, PROT_READ,
                        MAP_PRIVATE | MAP_POPULATE, fd, window_pos);
         if (__builtin_expect(p == MAP_FAILED, 0))
-        {
-            window_data = window_ptr = window_end = nullptr;
-            window_size = 0;
+            window_data = window_ptr = window_end = nullptr,
+            window_size = 0,
             file_size = window_pos;
-            return;
-        }
-
-        window_data = static_cast<const char*>(p);
-        window_ptr = window_data;
-        window_end = window_data + window_size;
-        window_pos += window_size;
+        else
+            window_data = static_cast<const char*>(p),
+            window_ptr = window_data,
+            window_end = window_data + window_size,
+            window_pos += window_size;
     }
 
 public:
@@ -72,10 +64,8 @@ public:
     {
         struct stat st;
         if (fstat(fd, &st) == 0 && st.st_size > 0)
-        {
-            file_size = st.st_size;
+            file_size = st.st_size,
             slide_window();
-        }
     }
 
     ~MmapIO()
@@ -122,12 +112,10 @@ private:
 
     inline char get_char()
     {
-        if (__builtin_expect(has_cache_, 0))
-        {
-            has_cache_ = false;
-            return cache_;
-        }
-        return MmapIO::get();
+        if (__builtin_expect(!has_cache_, 1))
+            return MmapIO::get();
+        has_cache_ = false;
+        return cache_;
     }
 
     inline void unget_char(char c)
@@ -158,42 +146,29 @@ private:
         if constexpr (std::is_signed<T>::value)
         {
             if (c == '-')
-            {
-                sign = -1;
+                sign = -1,
                 c = get_char();
-            }
             else if (c == '+')
-            {
-                c = get_char();
-            }
-        }
-        else
-        {
-            if (c == '+')
                 c = get_char();
         }
+        else if (c == '+')
+            c = get_char();
 
         using UT = std::make_unsigned<T>::type;
         __uint128_t value = 0;
         while (__builtin_expect(c >= '0' && c <= '9', 1) && c != '\0')
-        {
-            value = value * 10 + (c - '0');
+            value = value * 10 + (c - '0'),
             c = get_char();
-        }
         if (__builtin_expect(c != '\0', 0))
             unget_char(c);
 
         if constexpr (std::is_signed<T>::value)
-        {
             if (sign == -1)
                 return static_cast<T>(-static_cast<__int128_t>(value));
             else
                 return static_cast<T>(static_cast<__int128_t>(value));
-        }
         else
-        {
             return static_cast<T>(value);
-        }
     }
 
     // ---------- 浮点数解析 ----------
@@ -207,32 +182,24 @@ private:
         char c = get_char();
         int sign = 1;
         if (c == '-')
-        {
-            sign = -1;
+            sign = -1,
             c = get_char();
-        }
         else if (c == '+')
-        {
             c = get_char();
-        }
 
         long double value = 0.0L;
         while (__builtin_expect(c >= '0' && c <= '9', 1) && c != '\0')
-        {
-            value = value * 10.0L + (c - '0');
+            value = value * 10.0L + (c - '0'),
             c = get_char();
-        }
 
         if (c == '.')
         {
             c = get_char();
             long double frac = 0.0L, factor = 0.1L;
             while (__builtin_expect(c >= '0' && c <= '9', 1) && c != '\0')
-            {
-                frac += (c - '0') * factor;
-                factor *= 0.1L;
+                frac += (c - '0') * factor,
+                factor *= 0.1L,
                 c = get_char();
-            }
             value += frac;
         }
 
@@ -241,20 +208,14 @@ private:
             c = get_char();
             int exp_sign = 1;
             if (c == '-')
-            {
-                exp_sign = -1;
+                exp_sign = -1,
                 c = get_char();
-            }
             else if (c == '+')
-            {
                 c = get_char();
-            }
             int exp_val = 0;
             while (__builtin_expect(c >= '0' && c <= '9', 1) && c != '\0')
-            {
-                exp_val = exp_val * 10 + (c - '0');
+                exp_val = exp_val * 10 + (c - '0'),
                 c = get_char();
-            }
             long double exp_pow = 1.0L;
             for (int i = 0; i < exp_val; ++i)
                 exp_pow *= 10.0L;
@@ -312,10 +273,8 @@ public:
             std::string s;
             char c = get_char();
             while (__builtin_expect(c != '\0', 1) && c > ' ')
-            {
-                s.push_back(c);
+                s.push_back(c),
                 c = get_char();
-            }
             if (__builtin_expect(c != '\0', 0))
                 unget_char(c);
             value = std::move(s);
@@ -337,9 +296,7 @@ public:
                       std::is_same<DecayT, signed char>::value)
             MmapIO::put(static_cast<char>(value));
         else if constexpr (std::is_integral<DecayT>::value)
-        {
             if constexpr (std::is_signed<DecayT>::value)
-            {
                 if (value < 0)
                 {
                     MmapIO::put('-');
@@ -347,15 +304,9 @@ public:
                     write_unsigned_impl(static_cast<UT>(-static_cast<UT>(value)));
                 }
                 else
-                {
                     write_unsigned_impl(static_cast<std::make_unsigned_t<DecayT>>(value));
-                }
-            }
             else
-            {
                 write_unsigned_impl(value);
-            }
-        }
         else if constexpr (std::is_floating_point<DecayT>::value)
         {
             char buf[64];
@@ -372,15 +323,11 @@ public:
         }
         else if constexpr (std::is_same<DecayT, const char*>::value ||
                            std::is_same<DecayT, char*>::value)
-        {
             for (const char* p = value; *p; ++p)
                 MmapIO::put(*p);
-        }
         else if constexpr (std::is_same<DecayT, std::string>::value)
-        {
             for (char c : value)
                 MmapIO::put(c);
-        }
         else
             static_assert(sizeof(DecayT) == 0, "Unsupported type for operator<<");
         return *this;

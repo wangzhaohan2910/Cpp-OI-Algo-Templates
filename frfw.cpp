@@ -303,13 +303,9 @@ public:
             value = static_cast<DecayT>(c);
         }
         else if constexpr (std::is_integral<DecayT>::value)
-        {
             value = parse_integer<DecayT>();
-        }
         else if constexpr (std::is_floating_point<DecayT>::value)
-        {
             value = parse_float<DecayT>();
-        }
         else if constexpr (std::is_same<DecayT, std::string>::value)
         {
             skip_whitespace_and_cache();
@@ -325,9 +321,7 @@ public:
             value = std::move(s);
         }
         else
-        {
             static_assert(sizeof(DecayT) == 0, "Unsupported type for operator>>");
-        }
         return *this;
     }
 
@@ -341,9 +335,7 @@ public:
         if constexpr (std::is_same<DecayT, char>::value ||
                       std::is_same<DecayT, unsigned char>::value ||
                       std::is_same<DecayT, signed char>::value)
-        {
             MmapIO::put(static_cast<char>(value));
-        }
         else if constexpr (std::is_integral<DecayT>::value)
         {
             if constexpr (std::is_signed<DecayT>::value)
@@ -390,9 +382,7 @@ public:
                 MmapIO::put(c);
         }
         else
-        {
             static_assert(sizeof(DecayT) == 0, "Unsupported type for operator<<");
-        }
         return *this;
     }
 

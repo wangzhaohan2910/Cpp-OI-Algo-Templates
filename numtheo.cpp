@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <tuple>
 #include <cstdint>
 
 namespace number_theory
@@ -35,203 +36,92 @@ namespace number_theory
     inline int gcd(int a, int b)
     {
         while (b)
-            tie(a, b) = pair{b, a % b};
+            std::tie(a, b) = std::pair{b, a % b};
         return a;
     }
 
+    // 优化后的 Stein（二进制）gcd
     inline int stein(int a, int b)
     {
-        int k{};
-        while (a != b)
-            if (!(a & 1) && !(b & 1))
-                a >>= 1, b >>= 1, k++;
-            else if (!(a & 1) && b & 1)
-                a >>= 1;
-            else if (a & 1 && !(b & 1))
-                b >>= 1;
-            else
-                tie(a, b) = pair{max(a, b) - min(a, b), min(a, b)};
-        return a << k;
-    }
-
-    // 经典扩展欧几里得
-    int exgcd(const int a, const int b, int &x, int &y)
-    {
-        return b ? pair{exgcd(b, a % b, y, x), y -= a / b * x}.first : (x = 1, y = 0, a);
-    }
-
-    // 基于 Stein（二进制）算法的扩展欧几里得（支持 64 位）
-    // 返回 gcd(a,b)，并给出 x,y 使得 ax+by = gcd(a,b)
-    long long exgcd_stein(long long a, long long b, long long &x, long long &y)
-    {
-        if (a == 0)
+        if (a == 0) return b;
+        if (b == 0) return a;
+        int shift = __builtin_ctz(a | b);
+        a >>= __builtin_ctz(a);
+        do
         {
-            x = 0;
-            y = 1;
-            return b;
-        }
-        if (b == 0)
+            b >>= __builtin_ctz(b);
+            if (a > b) std::swap(a, b);
+            b = b - a;
+        } while (b != 0);
+        return a << shift;
+    }
+
+    // 迭代版扩展欧几里得（无递归）
+    // 返回 g = gcd(a,b)，并设置 x,y 使 ax+by = g
+    int exgcd(int a, int b, int &x, int &y)
+    {
+        x = 1; y = 0;
+        int x1 = 0, y1 = 1;
+        while (b)
         {
-            x = 1;
-            y = 0;
-            return a;
+            int q = a / b;
+            int ta = a - q * b; a = b; b = ta;
+            int tx = x - q * x1; x = x1; x1 = tx;
+            int ty = y - q * y1; y = y1; y1 = ty;
         }
-        // store originals
-        const long long a0 = a, b0 = b;
-        int shift = __builtin_ctzll(a | b); // common factors of 2
-        // remove factors of 2 from a and b
-        int za = __builtin_ctzll(a);
-        a >>= za;
-        int zb = __builtin_ctzll(b);
-        b >>= zb;
+        return a;
+    }
 
-        // initialize coefficient pairs:
-        // u = a = A*a0 + B*b0, v = b = C*a0 + D*b0
-        long long A = 1, B = 0; // corresponds to a
-        long long C = 0, D = 1; // corresponds to b
+    // Lucas 非递归实现（基于模 p 的阶乘/逆元预处理）
+    inline int C_mod(int m, int n)
+    {
+        if (n < 0 || n > m) return 0;
+        return fac(m) * 1LL * inv_on(fac(n)) % p * inv_on(fac(m - n)) % p;
+    }
 
-        while (true)
+    inline int lucas(long long m, long long n)
+    {
+        if (n < 0 || n > m) return 0;
+        int res = 1;
+        // 保证预处理至少到 p-1
+        fac(p - 1);
+        while (n > 0 || m > 0)
         {
-            if (a == b)
-            {
-                break;
-            }
-
-            if (a > b)
-            {
-                a -= b;
-                A -= C;
-                B -= D;
-                // remove factors of 2 from a
-                int tz = __builtin_ctzll(a);
-                a >>= tz;
-                while (tz-- > 0)
-                {
-                    // divide A and B by 2, but keep them integer coefficients by adjusting with a0/b0
-                    if ((A & 1) == 0 && (B & 1) == 0)
-                    {
-                        A >>= 1;
-                        B >>= 1;
-                    }
-                    else
-                    {
-                        A = (A + b0) >> 1;
-                        B = (B - a0) >> 1;
-                    }
-                }
-            }
-            else
-            {
-                b -= a;
-                C -= A;
-                D -= B;
-                int tz = __builtin_ctzll(b);
-                b >>= tz;
-                while (tz-- > 0)
-                {
-                    if ((C & 1) == 0 && (D & 1) == 0)
-                    {
-                        C >>= 1;
-                        D >>= 1;
-                    }
-                    else
-                    {
-                        C = (C + b0) >> 1;
-                        D = (D - a0) >> 1;
-                    }
-                }
-            }
+            int mi = m % p;
+            int ni = n % p;
+            if (ni > mi) return 0;
+            res = int(res * 1LL * C_mod(mi, ni) % p);
+            m /= p;
+            n /= p;
         }
-
-        long long g = a << shift; // gcd
-        x = A;
-        y = B;
-        // currently A*a0 + B*b0 = a, but gcd = a << shift, so multiply coefficients by 1<<shift
-        // We have a = g >> shift, so to get coefficients for g we multiply by that factor
-        for (int i = 0; i < shift; ++i)
-        {
-            // multiply coefficients by 2: x *= 2; y *= 2;
-            x <<= 1;
-            y <<= 1;
-        }
-        // Now x*a0 + y*b0 = g
-        return g;
+        return res;
     }
 
-    inline int eulerphi(int n)
+    inline int powint(int a, int b)
     {
-        int ans{n};
-        for (int i{2}; i * i <= n; i++)
-            if (!(n % i))
-            {
-                ans = ans / i * (i - 1);
-                while (!(n % i))
-                    n /= i;
-            }
-        if (n > 1)
-            ans = ans / n * (n - 1);
-        return ans;
+        return pow(a, b);
     }
 
-    inline int inv_on(const int n)
-    {
-        return pow(n, p - 2);
-    }
+    // ---------- 线性筛：8 个常用积性函数，共用一个连续数组 ----------
+    // 8 个函数顺序（索引）：
+    // 0: unit  (1 for all n)
+    // 1: id    (n)
+    // 2: mu    (Möbius)
+    // 3: phi   (Euler totient)
+    // 4: sigma (sum of divisors)
+    // 5: tau   (number of divisors)
+    // 6: rad   (radical: product of distinct prime factors)
+    // 7: lambda (Liouville function: (-1)^Omega(n))
+    
+    enum MF_INDEX { MF_UNIT = 0, MF_ID = 1, MF_MU = 2, MF_PHI = 3, MF_SIGMA = 4, MF_TAU = 5, MF_RAD = 6, MF_LAMBDA = 7, MF_CNT = 8 };
 
-    inline int inv_off(const int n)
-    {
-        if (n <= invt_)
-            return inv_[n];
-        for (invt_++; invt_ < n; invt_++)
-            inv_[invt_] = (p - p / invt_) * inv_[p % invt_] % p;
-        return inv_[n] = (p - p / n) * inv_[p % n] % p;
-    }
-
-    inline bool isprime(const int n)
-    {
-        for (int i{2}; i * i <= n; i++)
-            if (!(n % i))
-                return false;
-        return true;
-    }
-
-    inline int C(const int m, const int n)
-    {
-        return fac(m) * inv_on(fac(n)) % p * inv_on(fac(m - n)) % p;
-    }
-
-    inline int Austin(const int m, const int n)
-    {
-        if (m < p && n < p)
-            return C(m, n);
-        if (n % p > m % p)
-            return 0;
-        return C(m / p, n / p) * C(m % p, n % p) % p;
-    }
-
-    // ---------- 线性筛（计算常见积性函数） ----------
-    // 使用后会填充下列容器（索引从 0..n）：
-    // primes: 素数列表
-    // is_comp: 标记合数
-    // mu: Möbius 函数（int）
-    // phi: 欧拉函数（int）
-    // spf: 最小质因子
-    // cnt: spf 的幂指数（p^cnt | i）
-    // ppow: spf 的幂值 p^cnt（long long）
-    // spSum: 1 + p + p^2 + ... + p^cnt（用于计算 sigma）
-    // sigma: 约数和（long long）
-    // d: 约数个数（int）
-
+    std::vector<long long> mf; // length = (n+1) * MF_CNT, mf[i*MF_CNT + k]
     std::vector<int> primes;
     std::vector<char> is_comp;
-    std::vector<int> mu;
-    std::vector<int> phi;
-    std::vector<int> spf;
-    std::vector<int> cnt;
-    std::vector<long long> ppow;
-    std::vector<long long> spSum;
-    std::vector<long long> sigma;
-    std::vector<int> d;
+    std::vector<int> spf; // 最小质因子，供内部使用
+    std::vector<int> cnt; // p 的幂次数
+    std::vector<long long> ppow; // p^cnt
+    std::vector<long long> spSum; // 1 + p + ... + p^cnt
     int sieve_n = 0;
 
     void linear_sieve(int n)
@@ -240,70 +130,100 @@ namespace number_theory
             return;
         primes.clear();
         is_comp.assign(n + 1, 0);
-        mu.assign(n + 1, 0);
-        phi.assign(n + 1, 0);
         spf.assign(n + 1, 0);
         cnt.assign(n + 1, 0);
         ppow.assign(n + 1, 0);
         spSum.assign(n + 1, 0);
-        sigma.assign(n + 1, 0);
-        d.assign(n + 1, 0);
+        mf.assign((n + 1) * MF_CNT, 0);
 
-        mu[1] = 1;
-        phi[1] = 1;
+        // 初始化 n=1
+        mf[1 * MF_CNT + MF_UNIT] = 1;
+        mf[1 * MF_CNT + MF_ID] = 1;
+        mf[1 * MF_CNT + MF_MU] = 1;
+        mf[1 * MF_CNT + MF_PHI] = 1;
+        mf[1 * MF_CNT + MF_SIGMA] = 1;
+        mf[1 * MF_CNT + MF_TAU] = 1;
+        mf[1 * MF_CNT + MF_RAD] = 1;
+        mf[1 * MF_CNT + MF_LAMBDA] = 1;
+
         spf[1] = 1;
         cnt[1] = 0;
         ppow[1] = 1;
         spSum[1] = 1;
-        sigma[1] = 1;
-        d[1] = 1;
 
         for (int i = 2; i <= n; ++i)
         {
             if (!is_comp[i])
             {
                 primes.push_back(i);
-                mu[i] = -1;
-                phi[i] = i - 1;
                 spf[i] = i;
                 cnt[i] = 1;
                 ppow[i] = i;
                 spSum[i] = 1 + (long long)i;
-                sigma[i] = spSum[i];
-                d[i] = 2;
+                mf[i * MF_CNT + MF_UNIT] = 1;
+                mf[i * MF_CNT + MF_ID] = i;
+                mf[i * MF_CNT + MF_MU] = -1;
+                mf[i * MF_CNT + MF_PHI] = i - 1;
+                mf[i * MF_CNT + MF_SIGMA] = spSum[i];
+                mf[i * MF_CNT + MF_TAU] = 2;
+                mf[i * MF_CNT + MF_RAD] = i;
+                mf[i * MF_CNT + MF_LAMBDA] = -1;
             }
             for (int pj = 0; pj < (int)primes.size(); ++pj)
             {
-                int p = primes[pj];
-                long long t = 1LL * i * p;
-                if (t > n)
-                    break;
+                int pr = primes[pj];
+                long long t = 1LL * i * pr;
+                if (t > n) break;
                 is_comp[t] = 1;
-                spf[t] = p;
-                if (i % p == 0)
+                spf[t] = pr;
+                if (i % pr == 0)
                 {
-                    // p is the same as spf[i]
+                    // pr 与 spf[i] 相同：i = m * pr^k
                     cnt[t] = cnt[i] + 1;
-                    ppow[t] = ppow[i] * p;
+                    ppow[t] = ppow[i] * pr;
                     spSum[t] = spSum[i] + ppow[t];
-                    // sigma[t] = sigma[m] * spSum[t], and sigma[i] = sigma[m] * spSum[i]
+
+                    // unit
+                    mf[t * MF_CNT + MF_UNIT] = 1;
+                    // id: multiply by pr
+                    mf[t * MF_CNT + MF_ID] = mf[i * MF_CNT + MF_ID] * pr;
+                    // mu: zero because square factor
+                    mf[t * MF_CNT + MF_MU] = 0;
+                    // phi: phi(i*p) = phi(i) * p
+                    mf[t * MF_CNT + MF_PHI] = mf[i * MF_CNT + MF_PHI] * pr;
+                    // sigma: replace spSum[i] by spSum[t]
+                    // sigma[i] = sigma[m] * spSum[i], sigma[t] = sigma[m] * spSum[t]
                     // so sigma[t] = sigma[i] / spSum[i] * spSum[t]
-                    sigma[t] = sigma[i] / spSum[i] * spSum[t];
-                    d[t] = d[i] / (cnt[i] + 1) * (cnt[t] + 1);
-                    phi[t] = phi[i] * p;
-                    mu[t] = 0;
+                    if (spSum[i] != 0)
+                        mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA] / spSum[i] * spSum[t];
+                    else
+                        mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA];
+                    // tau: multiplicative; adjust exponent
+                    mf[t * MF_CNT + MF_TAU] = mf[i * MF_CNT + MF_TAU] / (cnt[i] + 1) * (cnt[t] + 1);
+                    // rad: same as rad[i]
+                    mf[t * MF_CNT + MF_RAD] = mf[i * MF_CNT + MF_RAD];
+                    // lambda: changes sign if added one prime factor
+                    // but since multiplicity increased, lambda = (-1)^{Omega(n)} where Omega counts multiplicity
+                    // Omega(t) = Omega(i) + 1
+                    mf[t * MF_CNT + MF_LAMBDA] = -mf[i * MF_CNT + MF_LAMBDA];
+
                     break;
                 }
                 else
                 {
-                    // new prime factor
+                    // pr is a new distinct prime factor
                     cnt[t] = 1;
-                    ppow[t] = p;
-                    spSum[t] = 1 + p;
-                    sigma[t] = sigma[i] * spSum[t];
-                    d[t] = d[i] * 2;
-                    phi[t] = phi[i] * (p - 1);
-                    mu[t] = -mu[i];
+                    ppow[t] = pr;
+                    spSum[t] = 1 + pr;
+
+                    mf[t * MF_CNT + MF_UNIT] = 1;
+                    mf[t * MF_CNT + MF_ID] = mf[i * MF_CNT + MF_ID] * pr;
+                    mf[t * MF_CNT + MF_MU] = -mf[i * MF_CNT + MF_MU];
+                    mf[t * MF_CNT + MF_PHI] = mf[i * MF_CNT + MF_PHI] * (pr - 1);
+                    mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA] * spSum[t];
+                    mf[t * MF_CNT + MF_TAU] = mf[i * MF_CNT + MF_TAU] * 2;
+                    mf[t * MF_CNT + MF_RAD] = mf[i * MF_CNT + MF_RAD] * pr;
+                    mf[t * MF_CNT + MF_LAMBDA] = -mf[i * MF_CNT + MF_LAMBDA];
                 }
             }
         }

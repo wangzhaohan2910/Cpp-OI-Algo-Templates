@@ -57,20 +57,85 @@ namespace number_theory
         return a << shift;
     }
 
-    // 迭代版扩展欧几里得（无递归）
-    // 返回 g = gcd(a,b)，并设置 x,y 使 ax+by = g
+    // 基于 Stein（二进制）算法的扩展欧几里得（无除法/无辗转相除）
+    // 返回 g = gcd(a,b)，并设置 x,y 使 ax + by = g
+    // 使用 long long 中间量以减小溢出风险
     int exgcd(int a, int b, int &x, int &y)
     {
-        x = 1; y = 0;
-        int x1 = 0, y1 = 1;
-        while (b)
+        if (a == 0)
         {
-            int q = a / b;
-            int ta = a - q * b; a = b; b = ta;
-            int tx = x - q * x1; x = x1; x1 = tx;
-            int ty = y - q * y1; y = y1; y1 = ty;
+            x = 0; y = (b == 0 ? 0 : 1);
+            return b;
         }
-        return a;
+        if (b == 0)
+        {
+            x = 1; y = 0;
+            return a;
+        }
+
+        long long a0 = a, b0 = b;
+        int shift = __builtin_ctzll(a0 | b0);
+
+        long long u = a0 >> __builtin_ctzll(a0);
+        long long v = b0 >> __builtin_ctzll(b0);
+
+        // coefficients: A,B for u; C,D for v
+        long long A = 1, B = 0;
+        long long C = 0, D = 1;
+
+        while (u != v)
+        {
+            if ((u & 1) == 0)
+            {
+                u >>= 1;
+                if ((A & 1) == 0 && (B & 1) == 0)
+                {
+                    A >>= 1; B >>= 1;
+                }
+                else
+                {
+                    A = (A + b0) >> 1;
+                    B = (B - a0) >> 1;
+                }
+            }
+            else if ((v & 1) == 0)
+            {
+                v >>= 1;
+                if ((C & 1) == 0 && (D & 1) == 0)
+                {
+                    C >>= 1; D >>= 1;
+                }
+                else
+                {
+                    C = (C + b0) >> 1;
+                    D = (D - a0) >> 1;
+                }
+            }
+            else if (u >= v)
+            {
+                u = u - v;
+                A = A - C;
+                B = B - D;
+            }
+            else
+            {
+                v = v - u;
+                C = C - A;
+                D = D - B;
+            }
+        }
+
+        long long g = u << shift; // gcd
+        long long X = A, Y = B;
+        // multiply coefficients by 2^shift
+        X <<= shift;
+        Y <<= shift;
+
+        // Reduce X,Y to fit into int by taking modulo of b0/a0 if needed is NOT appropriate here.
+        // We return them directly (casting). Caller should use types large enough if overflow is possible.
+        x = (int)X;
+        y = (int)Y;
+        return (int)g;
     }
 
     // Lucas 非递归实现（基于模 p 的阶乘/逆元预处理）
@@ -98,7 +163,7 @@ namespace number_theory
         return res;
     }
 
-    // 使用扩展欧几里得求模逆（非递归 exgcd）
+    // 使用扩展（Stein）欧几里得求模逆（不使用辗转相除）
     inline int inv_on(const int n)
     {
         int x, y;

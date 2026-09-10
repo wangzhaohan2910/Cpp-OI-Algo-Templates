@@ -98,9 +98,15 @@ namespace number_theory
         return res;
     }
 
+    // 使用扩展欧几里得求模逆（非递归 exgcd）
     inline int inv_on(const int n)
     {
-        return pow(n, p - 2);
+        int x, y;
+        int g = exgcd(n, p, x, y);
+        if (g != 1) return -1; // inverse does not exist
+        x %= p;
+        if (x < 0) x += p;
+        return x;
     }
 
     inline int inv_off(const int n)

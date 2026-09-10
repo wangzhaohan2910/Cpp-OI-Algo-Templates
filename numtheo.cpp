@@ -3,6 +3,7 @@
 #include <utility>
 #include <tuple>
 #include <cstdint>
+#include <cstring>
 
 namespace number_theory
 {
@@ -10,9 +11,9 @@ namespace number_theory
 
     void swap(auto &a, auto &b) noexcept
     {
+        a ^= b;
         b ^= a;
-        a = b ^ a;
-        b ^= a;
+        a ^= b;
     }
 
     inline int fac(const int n)
@@ -97,54 +98,44 @@ namespace number_theory
         return res;
     }
 
-    inline int powint(int a, int b)
+    inline int inv_on(const int n)
     {
-        return pow(a, b);
+        return pow(n, p - 2);
     }
 
-    // ---------- 线性筛：8 个常用积性函数，共用一个连续数组 ----------
-    // 8 个函数顺序（索引）：
-    // 0: unit  (1 for all n)
-    // 1: id    (n)
-    // 2: mu    (Möbius)
-    // 3: phi   (Euler totient)
-    // 4: sigma (sum of divisors)
-    // 5: tau   (number of divisors)
-    // 6: rad   (radical: product of distinct prime factors)
-    // 7: lambda (Liouville function: (-1)^Omega(n))
-    
-    enum MF_INDEX { MF_UNIT = 0, MF_ID = 1, MF_MU = 2, MF_PHI = 3, MF_SIGMA = 4, MF_TAU = 5, MF_RAD = 6, MF_LAMBDA = 7, MF_CNT = 8 };
+    inline int inv_off(const int n)
+    {
+        if (n <= invt_)
+            return inv_[n];
+        for (invt_++; invt_ < n; invt_++)
+            inv_[invt_] = (p - p / invt_) * inv_[p % invt_] % p;
+        return inv_[n] = (p - p / n) * inv_[p % n] % p;
+    }
 
-    std::vector<long long> mf; // length = (n+1) * MF_CNT, mf[i*MF_CNT + k]
+    // ---------- 线性筛：分开 8 个函数，使用同一块共享内存（覆盖） ----------
+    // 全局常量大小
+    constexpr int MAXS = 1000006; // 1e6 + 6
+    static long long mf_buffer[MAXS]; // 共享缓冲区，用户在两次函数调用之间 memcpy 出去
+
     std::vector<int> primes;
     std::vector<char> is_comp;
-    std::vector<int> spf; // 最小质因子，供内部使用
-    std::vector<int> cnt; // p 的幂次数
+    std::vector<int> spf; // 最小质因子
+    std::vector<int> cnt; // spf 的幂次数
     std::vector<long long> ppow; // p^cnt
     std::vector<long long> spSum; // 1 + p + ... + p^cnt
     int sieve_n = 0;
 
-    void linear_sieve(int n)
+    // 预处理分解信息（primes, spf, cnt, ppow, spSum），只做一次到上界 n
+    void sieve_prepare(int n)
     {
-        if (n <= sieve_n)
-            return;
+        if (n <= sieve_n) return;
+        if (n >= MAXS) n = MAXS - 1;
         primes.clear();
         is_comp.assign(n + 1, 0);
         spf.assign(n + 1, 0);
         cnt.assign(n + 1, 0);
         ppow.assign(n + 1, 0);
         spSum.assign(n + 1, 0);
-        mf.assign((n + 1) * MF_CNT, 0);
-
-        // 初始化 n=1
-        mf[1 * MF_CNT + MF_UNIT] = 1;
-        mf[1 * MF_CNT + MF_ID] = 1;
-        mf[1 * MF_CNT + MF_MU] = 1;
-        mf[1 * MF_CNT + MF_PHI] = 1;
-        mf[1 * MF_CNT + MF_SIGMA] = 1;
-        mf[1 * MF_CNT + MF_TAU] = 1;
-        mf[1 * MF_CNT + MF_RAD] = 1;
-        mf[1 * MF_CNT + MF_LAMBDA] = 1;
 
         spf[1] = 1;
         cnt[1] = 0;
@@ -160,14 +151,6 @@ namespace number_theory
                 cnt[i] = 1;
                 ppow[i] = i;
                 spSum[i] = 1 + (long long)i;
-                mf[i * MF_CNT + MF_UNIT] = 1;
-                mf[i * MF_CNT + MF_ID] = i;
-                mf[i * MF_CNT + MF_MU] = -1;
-                mf[i * MF_CNT + MF_PHI] = i - 1;
-                mf[i * MF_CNT + MF_SIGMA] = spSum[i];
-                mf[i * MF_CNT + MF_TAU] = 2;
-                mf[i * MF_CNT + MF_RAD] = i;
-                mf[i * MF_CNT + MF_LAMBDA] = -1;
             }
             for (int pj = 0; pj < (int)primes.size(); ++pj)
             {
@@ -178,56 +161,145 @@ namespace number_theory
                 spf[t] = pr;
                 if (i % pr == 0)
                 {
-                    // pr 与 spf[i] 相同：i = m * pr^k
                     cnt[t] = cnt[i] + 1;
                     ppow[t] = ppow[i] * pr;
                     spSum[t] = spSum[i] + ppow[t];
-
-                    // unit
-                    mf[t * MF_CNT + MF_UNIT] = 1;
-                    // id: multiply by pr
-                    mf[t * MF_CNT + MF_ID] = mf[i * MF_CNT + MF_ID] * pr;
-                    // mu: zero because square factor
-                    mf[t * MF_CNT + MF_MU] = 0;
-                    // phi: phi(i*p) = phi(i) * p
-                    mf[t * MF_CNT + MF_PHI] = mf[i * MF_CNT + MF_PHI] * pr;
-                    // sigma: replace spSum[i] by spSum[t]
-                    // sigma[i] = sigma[m] * spSum[i], sigma[t] = sigma[m] * spSum[t]
-                    // so sigma[t] = sigma[i] / spSum[i] * spSum[t]
-                    if (spSum[i] != 0)
-                        mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA] / spSum[i] * spSum[t];
-                    else
-                        mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA];
-                    // tau: multiplicative; adjust exponent
-                    mf[t * MF_CNT + MF_TAU] = mf[i * MF_CNT + MF_TAU] / (cnt[i] + 1) * (cnt[t] + 1);
-                    // rad: same as rad[i]
-                    mf[t * MF_CNT + MF_RAD] = mf[i * MF_CNT + MF_RAD];
-                    // lambda: changes sign if added one prime factor
-                    // but since multiplicity increased, lambda = (-1)^{Omega(n)} where Omega counts multiplicity
-                    // Omega(t) = Omega(i) + 1
-                    mf[t * MF_CNT + MF_LAMBDA] = -mf[i * MF_CNT + MF_LAMBDA];
-
                     break;
                 }
                 else
                 {
-                    // pr is a new distinct prime factor
                     cnt[t] = 1;
                     ppow[t] = pr;
                     spSum[t] = 1 + pr;
-
-                    mf[t * MF_CNT + MF_UNIT] = 1;
-                    mf[t * MF_CNT + MF_ID] = mf[i * MF_CNT + MF_ID] * pr;
-                    mf[t * MF_CNT + MF_MU] = -mf[i * MF_CNT + MF_MU];
-                    mf[t * MF_CNT + MF_PHI] = mf[i * MF_CNT + MF_PHI] * (pr - 1);
-                    mf[t * MF_CNT + MF_SIGMA] = mf[i * MF_CNT + MF_SIGMA] * spSum[t];
-                    mf[t * MF_CNT + MF_TAU] = mf[i * MF_CNT + MF_TAU] * 2;
-                    mf[t * MF_CNT + MF_RAD] = mf[i * MF_CNT + MF_RAD] * pr;
-                    mf[t * MF_CNT + MF_LAMBDA] = -mf[i * MF_CNT + MF_LAMBDA];
                 }
             }
         }
         sieve_n = n;
+    }
+
+    // 每个函数覆盖同一块 mf_buffer[0..n]
+    void sieve_unit(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        for (int i = 1; i <= n; ++i) mf_buffer[i] = 1;
+    }
+
+    void sieve_id(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        for (int i = 1; i <= n; ++i) mf_buffer[i] = i;
+    }
+
+    void sieve_mu(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            if (m % p == 0) mf_buffer[i] = 0;
+            else mf_buffer[i] = -mf_buffer[m];
+        }
+    }
+
+    void sieve_phi(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            if (m % p == 0) mf_buffer[i] = mf_buffer[m] * p;
+            else mf_buffer[i] = mf_buffer[m] * (p - 1);
+        }
+    }
+
+    void sieve_sigma(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            if (m % p == 0)
+            {
+                // combine with previous power
+                long long spSum_i = spSum[i];
+                long long spSum_m = spSum[m];
+                if (spSum_m != 0)
+                    mf_buffer[i] = mf_buffer[m] / spSum_m * spSum_i;
+                else
+                    mf_buffer[i] = mf_buffer[m];
+            }
+            else
+            {
+                mf_buffer[i] = mf_buffer[m] * spSum[i];
+            }
+        }
+    }
+
+    void sieve_tau(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            if (m % p == 0)
+            {
+                // exponent increases from cnt[m] to cnt[m]+1
+                mf_buffer[i] = mf_buffer[m] / (cnt[m] + 1) * (cnt[m] + 2);
+            }
+            else
+            {
+                mf_buffer[i] = mf_buffer[m] * 2;
+            }
+        }
+    }
+
+    void sieve_rad(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            if (m % p == 0) mf_buffer[i] = mf_buffer[m];
+            else mf_buffer[i] = mf_buffer[m] * p;
+        }
+    }
+
+    void sieve_lambda(int n)
+    {
+        sieve_prepare(n);
+        if (n >= MAXS) n = MAXS - 1;
+        mf_buffer[0] = 0;
+        mf_buffer[1] = 1;
+        for (int i = 2; i <= n; ++i)
+        {
+            int p = spf[i];
+            int m = i / p;
+            mf_buffer[i] = -mf_buffer[m];
+        }
     }
 
 } // namespace number_theory

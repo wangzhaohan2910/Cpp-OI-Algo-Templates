@@ -1,9 +1,3 @@
-#include <bitset>
-#include <iostream>
-#include <string>
-#include <type_traits>
-#include <utility>
-
 template <size_t len>
 class BigInt : public std::bitset<len>
 {

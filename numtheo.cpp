@@ -27,98 +27,73 @@ namespace number_theory
         return r;
     }
 
-    // 基于 Stein（二进制）算法的扩展欧几里得
-    // 返回 g = gcd(a,b)，并设置 x,y 使 ax + by = g
-    // 要求 a,b >= 0；全程只用移位、加减和比较，不做除法
     int exgcd(int a, int b, int &x, int &y)
     {
+        if (a == 0 && b == 0)
+        {
+            x = y = 0;
+            return 0;
+        }
         if (a == 0)
         {
             x = 0;
-            y = (b == 0 ? 0 : 1);
-            return b;
+            y = (b > 0) ? 1 : -1;
+            return (b > 0) ? b : -b;   // 要求 b != INT_MIN
         }
         if (b == 0)
         {
-            x = 1;
+            x = (a > 0) ? 1 : -1;
             y = 0;
-            return a;
+            return (a > 0) ? a : -a;   // 要求 a != INT_MIN
         }
 
-        const int shift = __builtin_ctzll((unsigned long long)(a | b));
-        const long long x0 = (long long)a >> shift;
-        const long long y0 = (long long)b >> shift;
+        const int sa = (a < 0) ? -1 : 1;
+        const int sb = (b < 0) ? -1 : 1;
+        const int A  = (a < 0) ? -a : a;   // 要求 a != INT_MIN
+        const int B  = (b < 0) ? -b : b;   // 要求 b != INT_MIN
 
-        long long u = x0, v = y0;
-        long long A = 1, B = 0; // A*x0 + B*y0 = u
-        long long C = 0, D = 1; // C*x0 + D*y0 = v
+        const int shift = __builtin_ctzll((long long)(A | B));
+        const int x0 = A >> shift;
+        const int y0 = B >> shift;
 
-        // 减法后 |P| < 2*y0，一次调整即可回到 (-y0, y0)
-        auto norm = [&](long long &P, long long &Q)
+        int u = x0, v = y0;
+        int P = 1, Q = 0; // P*x0 + Q*y0 = u
+        int R = 0, S = 1; // R*x0 + S*y0 = v
+
+        auto norm = [&](int &P, int &Q)
         {
-            if (P >= y0)
-            {
-                P -= y0;
-                Q += x0;
-            }
-            if (P <= -y0)
-            {
-                P += y0;
-                Q -= x0;
-            }
+            if (P >= y0)  P -= y0, Q += x0;
+            if (P <= -y0) P += y0, Q -= x0;
         };
 
         while (u != v)
         {
-            while ((u & 1) == 0)
+            while (!(u & 1))
             {
                 u >>= 1;
-                if ((A & 1) == 0 && (B & 1) == 0)
-                {
-                    A >>= 1;
-                    B >>= 1;
-                }
+                if (!(P & 1) && !(Q & 1))
+                    P >>= 1, Q >>= 1;
                 else
-                {
-                    A = (A + y0) >> 1;
-                    B = -((x0 - B) >> 1);
-                }
+                    P = (P + y0) >> 1, Q = -((x0 - Q) >> 1);
             }
-
-            while ((v & 1) == 0)
+            while (!(v & 1))
             {
                 v >>= 1;
-                if ((C & 1) == 0 && (D & 1) == 0)
-                {
-                    C >>= 1;
-                    D >>= 1;
-                }
+                if (!(R & 1) && !(S & 1))
+                    R >>= 1, S >>= 1;
                 else
-                {
-                    C = (C + y0) >> 1;
-                    D = -((x0 - D) >> 1);
-                }
+                    R = (R + y0) >> 1, S = -((x0 - S) >> 1);
             }
-
             if (u > v)
-            {
-                u -= v;
-                A -= C;
-                B -= D;
-                norm(A, B);
-            }
+                u -= v, P -= R, Q -= S, norm(P, Q);
             else if (v > u)
-            {
-                v -= u;
-                C -= A;
-                D -= B;
-                norm(C, D);
-            }
+                v -= u, R -= P, S -= Q, norm(R, S);
         }
 
-        x = (int)A;
-        y = (int)B;
-        return (int)(u << shift);
+        const int g = u << shift;
+        x = sa * P;
+        y = sb * Q;
+        return g;
     }
 
     // Lucas 非递归实现（基于模 p 的阶乘/逆元预处理）

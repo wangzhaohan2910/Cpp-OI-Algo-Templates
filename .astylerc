@@ -1,0 +1,15 @@
+recursive
+style=allman
+indent=spaces=4
+pad-oper
+pad-header
+unpad-paren
+align-pointer=name
+convert-tabs
+indent-preproc-define
+indent-col1-comments
+max-code-length=100
+keep-one-line-blocks
+suffix=none
+exclude=SegTreeLazyRangeAdd.cpp
+exclude=SegTreeLazyRangeSet.cpp

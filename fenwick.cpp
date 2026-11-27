@@ -11,7 +11,7 @@ class Fenwick
     static constexpr size_t dims[Rank] = {Dims...};
     static constexpr size_t TOTAL = (Dims * ...); // C++17 折叠表达式
 
-    int tree[TOTAL + 1]{}; // 静态数组，零初始化
+    int tree[TOTAL + 1] {}; // 静态数组，零初始化
 
     // ---------- 展平（1‑based） ----------
     size_t flatten(const size_t idx[]) const
@@ -30,7 +30,7 @@ class Fenwick
     template <size_t D = 0>
     void update_rec(size_t pos[], int delta, const size_t target[])
     {
-        if constexpr (D == Rank)
+        if constexpr(D == Rank)
         {
             tree[flatten(pos)] += delta;
             return;
@@ -40,7 +40,7 @@ class Fenwick
             for (size_t i = target[D]; i <= dims[D]; i += i & -i)
             {
                 pos[D] = i;
-                update_rec<D + 1>(pos, delta, target);
+                update_rec < D + 1 > (pos, delta, target);
             }
         }
     }
@@ -49,7 +49,7 @@ class Fenwick
     template <size_t D = 0>
     int query_rec(size_t pos[], const size_t target[]) const
     {
-        if constexpr (D == Rank)
+        if constexpr(D == Rank)
         {
             return tree[flatten(pos)];
         }
@@ -59,7 +59,7 @@ class Fenwick
             for (size_t i = target[D]; i > 0; i -= i & -i)
             {
                 pos[D] = i;
-                sum += query_rec<D + 1>(pos, target);
+                sum += query_rec < D + 1 > (pos, target);
             }
             return sum;
         }
@@ -70,7 +70,7 @@ class Fenwick
     int inclusion_exclusion_rec(const size_t l[], const size_t r[],
                                 int sign, size_t cur[]) const
     {
-        if constexpr (D == Rank)
+        if constexpr(D == Rank)
         {
             size_t pos[Rank] = {}; // 独立工作区
             return sign * query_rec<0>(pos, cur);
@@ -80,10 +80,10 @@ class Fenwick
             int sum = 0;
             // 分支1：选右边界
             cur[D] = r[D];
-            sum += inclusion_exclusion_rec<D + 1>(l, r, sign, cur);
+            sum += inclusion_exclusion_rec < D + 1 > (l, r, sign, cur);
             // 分支2：选左边界 - 1
             cur[D] = l[D] - 1;
-            sum += inclusion_exclusion_rec<D + 1>(l, r, -sign, cur);
+            sum += inclusion_exclusion_rec < D + 1 > (l, r, -sign, cur);
             return sum;
         }
     }
@@ -166,7 +166,7 @@ template <size_t Dim>
 class Fenwick<1, Dim>
 {
 private:
-    int tree[Dim + 1]{};
+    int tree[Dim + 1] {};
 
 public:
     void add(int delta, size_t idx)

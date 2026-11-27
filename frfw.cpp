@@ -13,15 +13,15 @@ private:
     size_t file_size;
     size_t window_pos;
     size_t window_size;
-    const char* __restrict__ window_data;
-    const char* __restrict__ window_ptr;
-    const char* __restrict__ window_end;
+    const char *__restrict__ window_data;
+    const char *__restrict__ window_ptr;
+    const char *__restrict__ window_end;
 
     static constexpr size_t WINDOW_BYTES = 1ULL << 30;   // 1GB
     static constexpr size_t OUT_BYTES   = 1ULL << 24;   // 16MB
 
-    char* __restrict__ out_buf;
-    char* __restrict__ out_ptr;
+    char *__restrict__ out_buf;
+    char *__restrict__ out_ptr;
 
     inline void flush()
     {
@@ -33,8 +33,8 @@ private:
     inline void slide_window()
     {
         if (__builtin_expect(window_data != nullptr, 1))
-            munmap(const_cast<char*>(window_data), window_size),
-            window_data = nullptr;
+            munmap(const_cast<char * >(window_data), window_size),
+                   window_data = nullptr;
         if (__builtin_expect(window_pos >= file_size, 0))
         {
             window_ptr = window_end = nullptr;
@@ -43,14 +43,14 @@ private:
         }
 
         window_size = std::min(WINDOW_BYTES, file_size - window_pos);
-        void* p = mmap(nullptr, window_size, PROT_READ,
+        void *p = mmap(nullptr, window_size, PROT_READ,
                        MAP_PRIVATE | MAP_POPULATE, fd, window_pos);
         if (__builtin_expect(p == MAP_FAILED, 0))
             window_data = window_ptr = window_end = nullptr,
             window_size = 0,
             file_size = window_pos;
         else
-            window_data = static_cast<const char*>(p),
+            window_data = static_cast<const char *>(p),
             window_ptr = window_data,
             window_end = window_data + window_size,
             window_pos += window_size;
@@ -73,11 +73,11 @@ public:
         flush();
         delete[] out_buf;
         if (window_data != nullptr)
-            munmap(const_cast<char*>(window_data), window_size);
+            munmap(const_cast<char * >(window_data), window_size);
     }
 
-    MmapIO(const MmapIO&) = delete;
-    MmapIO& operator=(const MmapIO&) = delete;
+    MmapIO(const MmapIO &) = delete;
+    MmapIO &operator=(const MmapIO &) = delete;
 
     // ----- 唯一四个公开 API -----
     inline char get()
@@ -143,7 +143,7 @@ private:
         char c = get_char();
         int sign = 1;
 
-        if constexpr (std::is_signed<T>::value)
+        if constexpr(std::is_signed<T>::value)
         {
             if (c == '-')
                 sign = -1,
@@ -162,7 +162,7 @@ private:
         if (__builtin_expect(c != '\0', 0))
             unget_char(c);
 
-        if constexpr (std::is_signed<T>::value)
+        if constexpr(std::is_signed<T>::value)
             if (sign == -1)
                 return static_cast<T>(-static_cast<__int128_t>(value));
             else
@@ -198,8 +198,8 @@ private:
             long double frac = 0.0L, factor = 0.1L;
             while (__builtin_expect(c >= '0' && c <= '9', 1) && c != '\0')
                 frac += (c - '0') * factor,
-                factor *= 0.1L,
-                c = get_char();
+                        factor *= 0.1L,
+                                  c = get_char();
             value += frac;
         }
 
@@ -240,7 +240,8 @@ private:
         {
             buf[n++] = static_cast<char>('0' + (value % 10));
             value /= 10;
-        } while (value);
+        }
+        while (value);
         while (n--)
             MmapIO::put(buf[n]);
     }
@@ -250,31 +251,31 @@ public:
 
     // ---------- 重载 >> ----------
     template <typename T>
-    FastIO& operator>>(T& value)
+    FastIO &operator>>(T& value)
     {
         using DecayT = std::decay_t<T>;
 
         // 优先处理字符类型（避免被当作整数）
-        if constexpr (std::is_same<DecayT, char>::value ||
-                      std::is_same<DecayT, unsigned char>::value ||
-                      std::is_same<DecayT, signed char>::value)
+        if constexpr(std::is_same<DecayT, char>::value ||
+                     std::is_same<DecayT, unsigned char>::value ||
+                     std::is_same<DecayT, signed char>::value)
         {
             skip_whitespace_and_cache();
             char c = get_char();
             value = static_cast<DecayT>(c);
         }
-        else if constexpr (std::is_integral<DecayT>::value)
+        else if constexpr(std::is_integral<DecayT>::value)
             value = parse_integer<DecayT>();
-        else if constexpr (std::is_floating_point<DecayT>::value)
+        else if constexpr(std::is_floating_point<DecayT>::value)
             value = parse_float<DecayT>();
-        else if constexpr (std::is_same<DecayT, std::string>::value)
+        else if constexpr(std::is_same<DecayT, std::string>::value)
         {
             skip_whitespace_and_cache();
             std::string s;
             char c = get_char();
             while (__builtin_expect(c != '\0', 1) && c > ' ')
                 s.push_back(c),
-                c = get_char();
+                            c = get_char();
             if (__builtin_expect(c != '\0', 0))
                 unget_char(c);
             value = std::move(s);
@@ -286,17 +287,17 @@ public:
 
     // ---------- 重载 << ----------
     template <typename T>
-    FastIO& operator<<(const T& value)
+    FastIO &operator<<(const T& value)
     {
         using DecayT = std::decay_t<T>;
 
         // 优先处理字符类型（避免被当作整数输出ASCII码）
-        if constexpr (std::is_same<DecayT, char>::value ||
-                      std::is_same<DecayT, unsigned char>::value ||
-                      std::is_same<DecayT, signed char>::value)
+        if constexpr(std::is_same<DecayT, char>::value ||
+                     std::is_same<DecayT, unsigned char>::value ||
+                     std::is_same<DecayT, signed char>::value)
             MmapIO::put(static_cast<char>(value));
-        else if constexpr (std::is_integral<DecayT>::value)
-            if constexpr (std::is_signed<DecayT>::value)
+        else if constexpr(std::is_integral<DecayT>::value)
+            if constexpr(std::is_signed<DecayT>::value)
                 if (value < 0)
                 {
                     MmapIO::put('-');
@@ -307,25 +308,25 @@ public:
                     write_unsigned_impl(static_cast<std::make_unsigned_t<DecayT>>(value));
             else
                 write_unsigned_impl(value);
-        else if constexpr (std::is_floating_point<DecayT>::value)
+        else if constexpr(std::is_floating_point<DecayT>::value)
         {
             char buf[64];
-            if constexpr (std::is_same<DecayT, float>::value)
+            if constexpr(std::is_same<DecayT, float>::value)
                 snprintf(buf, sizeof(buf), "%.9g", static_cast<double>(value));
-            else if constexpr (std::is_same<DecayT, double>::value)
+            else if constexpr(std::is_same<DecayT, double>::value)
                 snprintf(buf, sizeof(buf), "%.17g", value);
-            else if constexpr (std::is_same<DecayT, long double>::value)
+            else if constexpr(std::is_same<DecayT, long double>::value)
                 snprintf(buf, sizeof(buf), "%.21Lg", value);
             else
                 static_assert(sizeof(DecayT) == 0, "Unsupported floating type");
             for (int i = 0; buf[i]; ++i)
                 MmapIO::put(buf[i]);
         }
-        else if constexpr (std::is_same<DecayT, const char*>::value ||
-                           std::is_same<DecayT, char*>::value)
-            for (const char* p = value; *p; ++p)
+        else if constexpr(std::is_same<DecayT, const char * >::value ||
+                          std::is_same<DecayT, char * >::value)
+            for (const char *p = value; *p; ++p)
                 MmapIO::put(*p);
-        else if constexpr (std::is_same<DecayT, std::string>::value)
+        else if constexpr(std::is_same<DecayT, std::string>::value)
             for (char c : value)
                 MmapIO::put(c);
         else
@@ -334,6 +335,6 @@ public:
     }
 
     // 针对 C 字符串字面量的重载（避免模板歧义）
-    FastIO& operator<<(const char* s) { return this->operator<<<const char*>(s); }
-    FastIO& operator<<(char* s) { return this->operator<<<char*>(s); }
+    FastIO &operator<<(const char* s) { return this->operator<<<const char* > (s); }
+    FastIO &operator<<(char* s) { return this->operator<<<char* > (s); }
 } cio;

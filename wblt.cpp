@@ -213,7 +213,7 @@ private:
         if (a == 0) return b;
         if (b == 0) return a;
         if (nodes[a].left == 0 && nodes[a].right == 0 &&
-            nodes[b].left == 0 && nodes[b].right == 0)
+                nodes[b].left == 0 && nodes[b].right == 0)
         {
             // 两个叶子直接合并
             int new_node = new_internal(a, b);
@@ -255,7 +255,7 @@ private:
     }
 
     // ---------- 查找 ----------
-    static Value* find_rec(int p, Key k)
+    static Value *find_rec(int p, Key k)
     {
         while (p)
         {
@@ -314,7 +314,7 @@ public:
         return PersistentWBLT(new_root);
     }
 
-    Value* find(Key k) const
+    Value *find(Key k) const
     {
         return find_rec(root, k);
     }

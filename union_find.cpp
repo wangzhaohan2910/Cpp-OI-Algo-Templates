@@ -1,6 +1,6 @@
 struct union_find
 {
-    int fa[500005]{}, sz[500005]{}, n;
+    int fa[500005] {}, sz[500005] {}, n;
     [[nodiscard]] int find(const int x)
     {
         if (x == fa[x])

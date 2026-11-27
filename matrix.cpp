@@ -27,7 +27,7 @@ struct matrix
             for (int j{}; j < lhs.w; j++)
                 for (int k{}; k < rhs.w; k++)
                     res[i][k] += lhs[i][j] * rhs[j][k],
-                    res[i][k] %= p;
+                                 res[i][k] %= p;
         return res;
     }
     matrix &operator*=(const matrix &rhs) &

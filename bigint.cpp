@@ -1,4 +1,5 @@
-struct bigint final : std::vector<bool> {
+struct bigint final : std::vector<bool>
+{
     bool is_negative = false;
 
     // ==========================================

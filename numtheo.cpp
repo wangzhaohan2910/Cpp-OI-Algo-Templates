@@ -79,7 +79,7 @@ struct number_theory
     int p;
     vector<int> fc{1}, iv{0, 1};
 
-    number_theory(int p = 998244353) : p{p} {}
+    explicit number_theory(int p = 998244353) : p{p} {}
 
     [[nodiscard]] int pow(int a, int b)
     {

@@ -1,12 +1,15 @@
 struct union_find
 {
-    int fa[500005] {}, sz[500005] {}, n;
+    int *fa, *sz;
+    const int n;
+
     [[nodiscard]] int find(const int x)
     {
         if (x == fa[x])
             return x;
         return fa[x] = find(fa[x]);
     }
+
     void merge(int x, int y)
     {
         x = find(x);
@@ -17,9 +20,17 @@ struct union_find
             else
                 fa[y] = x, sz[x] += sz[y];
     }
-    explicit union_find(const int n) : n{n}
+
+    explicit union_find(const int n)
+        : n{n}, fa{new int[n + 1]}, sz{new int[n + 1]}
     {
-        for (int i{1}; i <= n; i++)
+        for (int i{}; i <= n; i++)
             fa[i] = i, sz[i] = 1;
+    }
+
+    ~union_find()
+    {
+        delete[] fa;
+        delete[] sz;
     }
 };

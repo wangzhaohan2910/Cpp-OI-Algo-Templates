@@ -1,0 +1,59 @@
+name: Format and check C++ templates
+
+on:
+  push:
+    paths:
+      - "**.cpp"
+      - ".astylerc"
+      - ".github/workflows/cpp-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format-and-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes astyle g++
+
+      - name: Format C++ files
+        run: astyle "*.cpp"
+
+      - name: Save formatting changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "*.cpp"
+
+          if ! git diff --cached --quiet; then
+            git diff --cached --stat
+            git commit -m "style: format C++ files with astyle"
+            git push
+          fi
+
+      - name: Check template.cpp syntax
+        run: g++ -std=gnu++26 -fsyntax-only template.cpp
+
+      - name: Check each remaining C++ file
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          for file in *.cpp; do
+            [[ "$file" == "template.cpp" ]] && continue
+
+            echo "Checking template.cpp + $file"
+            cat template.cpp "$file" |
+              g++ -std=gnu++26 -x c++ -fsyntax-only -
+          done

@@ -36,7 +36,7 @@ struct matrix
         return r;
     }
 
-    matrix &operator*=(const matrix &rhs) &
+    matrix & operator*=(const matrix &rhs) &
     {
         return (*this) = (*this) * rhs;
     }

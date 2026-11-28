@@ -335,10 +335,12 @@ public:
     }
 
     // 针对 C 字符串字面量的重载（避免模板歧义）
-    FastIO &operator<<(const char* s) {
+    FastIO &operator<<(const char* s)
+    {
         return this->operator<<<const char* > (s);
     }
-    FastIO &operator<<(char* s) {
+    FastIO &operator<<(char* s)
+    {
         return this->operator<<<char* > (s);
     }
 } cio;

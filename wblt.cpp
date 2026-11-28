@@ -23,7 +23,8 @@ private:
 
     int root;
 
-    static int sz(int p) {
+    static int sz(int p)
+    {
         return p ? t[p].sz : 0;
     }
 
@@ -128,14 +129,16 @@ private:
     // 没找到时 removed = false，原样返回 p，不浪费节点
     static int erase_rec(int p, const Key &k, bool &removed)
     {
-        if (p == 0) {
+        if (p == 0)
+        {
             removed = false;
             return 0;
         }
 
         if (t[p].l == 0)   // 叶子
         {
-            if (t[p].key == k) {
+            if (t[p].key == k)
+            {
                 removed = true;
                 return 0;
             }
@@ -166,7 +169,8 @@ private:
         {
             int ls = t[t[p].l].sz;
             if (k <= ls) p = t[p].l;
-            else {
+            else
+            {
                 k -= ls;
                 p = t[p].r;
             }
@@ -236,13 +240,16 @@ public:
         return root && contains_impl(root, k);
     }
 
-    [[nodiscard]] int size() const {
+    [[nodiscard]] int size() const
+    {
         return sz(root);
     }
-    [[nodiscard]] bool empty() const {
+    [[nodiscard]] bool empty() const
+    {
         return root == 0;
     }
-    [[nodiscard]] int get_root() const {
+    [[nodiscard]] int get_root() const
+    {
         return root;
     }
 };

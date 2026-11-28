@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install --yes astyle g++
 
       - name: Format C++ files
-        run: astyle --options=.astylerc *.cpp
+        run: astyle --options=.astylerc "*.cpp"
 
       - name: Save formatting changes
         run: |

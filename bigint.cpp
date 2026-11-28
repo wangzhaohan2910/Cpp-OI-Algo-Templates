@@ -1,6 +1,6 @@
 struct bigint final : std::vector<bool>
 {
-    bool is_negative = false;
+    bool is_negative{};
 
     // ==========================================
     // 0. 内部辅助
@@ -10,28 +10,25 @@ struct bigint final : std::vector<bool>
     // ==========================================
     // 1. 构造、析构与基础赋值
     // ==========================================
-    bigint();
-    bigint(const bigint &);
-    bigint(bigint &&);
-    bigint &operator=(const bigint &);
-    bigint &operator=(bigint &&);
-    ~bigint();
+    bigint() = default;
+    bigint(long long);
+    bigint(unsigned long long);
 
     // ==========================================
     // 2. 复合赋值运算符 (10个)
     // ==========================================
     // 算术
-    bigint &operator+=(const bigint &);
-    bigint &operator-=(const bigint &);
-    bigint &operator*=(const bigint &);
-    bigint &operator/=(const bigint &);
-    bigint &operator%=(const bigint &);
+    bigint &operator+=(const bigint &) &;
+    bigint &operator-=(const bigint &) &;
+    bigint &operator*=(const bigint &) &;
+    bigint &operator/=(const bigint &) &;
+    bigint &operator%=(const bigint &) &;
     // 位运算
-    bigint &operator&=(const bigint &);
-    bigint &operator|=(const bigint &);
-    bigint &operator^=(const bigint &);
-    bigint &operator<<=(const bigint &);
-    bigint &operator>>=(const bigint &);
+    bigint &operator&=(const bigint &) &;
+    bigint &operator|=(const bigint &) &;
+    bigint &operator^=(const bigint &) &;
+    bigint &operator<<=(const bigint &) &;
+    bigint &operator>>=(const bigint &) &;
 
     // ==========================================
     // 3. 双目算术运算符 (5个)
@@ -58,10 +55,10 @@ struct bigint final : std::vector<bool>
     bigint operator-() const;       // 一元负
     bigint operator~() const;       // 按位取反
 
-    bigint &operator++();           // 前置 ++
-    bigint  operator++(int);        // 后置 ++
-    bigint &operator--();           // 前置 --
-    bigint  operator--(int);        // 后置 --
+    bigint &operator++() &;           // 前置 ++
+    bigint  operator++(int) &;        // 后置 ++
+    bigint &operator--() &;           // 前置 --
+    bigint  operator--(int) &;        // 后置 --
 
     bool operator!() const;         // 逻辑非
 

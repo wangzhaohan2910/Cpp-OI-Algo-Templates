@@ -9,51 +9,66 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   format-and-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes astyle g++
+          sudo apt-get install --yes astyle
+
+      - name: Show compiler version
+        run: g++ --version
 
       - name: Format C++ files
-        run: astyle --options=.astylerc "*.cpp"
+        run: find . -type f -name '*.cpp' -print0 | xargs -0 -r astyle --options=.astylerc --suffix=none
 
       - name: Save formatting changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "*.cpp"
+          git add -A
 
           if ! git diff --cached --quiet; then
             git diff --cached --stat
             git commit -m "style: format C++ files with astyle"
-            git push
+            git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
           fi
 
       - name: Check template.cpp syntax
-        run: g++ -std=gnu++26 -fsyntax-only template.cpp
+        run: g++ -std=c++26 -fsyntax-only template.cpp
 
       - name: Check each remaining C++ file
         shell: bash
         run: |
-          set -euo pipefail
-          shopt -s nullglob
+          set -uo pipefail
 
-          for file in *.cpp; do
-            [[ "$file" == "template.cpp" ]] && continue
+          fail=0
+          while IFS= read -r -d '' file; do
+            [[ "$file" == "./template.cpp" ]] && continue
 
-            echo "Checking template.cpp + $file"
-            cat template.cpp "$file" |
-              g++ -std=gnu++26 -x c++ -fsyntax-only -
-          done
+            echo "::group::Checking template.cpp + $file"
+            if cat template.cpp "$file" | g++ -std=c++26 -x c++ -fsyntax-only -I"$(dirname "$file")" -; then
+              echo "OK"
+            else
+              fail=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -type f -name '*.cpp' -print0)
+
+          exit $fail

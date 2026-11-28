@@ -34,9 +34,15 @@ jobs:
 
       - name: Show compiler version
         run: g++ --version
-
+        
+      - name: Debug astyle config
+        run: |
+          ls -la .astylerc
+          cat .astylerc
+          astyle --version
+          
       - name: Format C++ files
-        run: find . -type f -name '*.cpp' -print0 | xargs -0 -r astyle --options=.astylerc --suffix=none
+        run: astyle --options=.astylerc "*.cpp"
 
       - name: Save formatting changes
         run: |

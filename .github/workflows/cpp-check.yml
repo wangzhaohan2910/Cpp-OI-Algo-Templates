@@ -42,7 +42,7 @@ jobs:
           astyle --version
           
       - name: Format C++ files
-        run: astyle --options=.astylerc "*.cpp"
+        run: astyle "*.cpp"
 
       - name: Save formatting changes
         run: |

@@ -1,5 +1,5 @@
 #include <bits/extc++.h>
-// #define int long long
+#define int long long
 using namespace std;
 using namespace __gnu_cxx;
 using namespace __gnu_pbds;
@@ -17,7 +17,7 @@ typedef unsigned long usize;
 typedef float f32;
 typedef double f64;
 typedef long double f128;
-signed main()
+int main()
 {
     return 0;
 }

@@ -47,8 +47,8 @@ private:
                        MAP_PRIVATE | MAP_POPULATE, fd, window_pos);
         if (__builtin_expect(p == MAP_FAILED, 0))
             window_data = window_ptr = window_end = nullptr,
-            window_size = 0,
-            file_size = window_pos;
+                                       window_size = 0,
+                                       file_size = window_pos;
         else
             window_data = static_cast<const char *>(p),
             window_ptr = window_data,
@@ -335,6 +335,10 @@ public:
     }
 
     // 针对 C 字符串字面量的重载（避免模板歧义）
-    FastIO &operator<<(const char* s) { return this->operator<<<const char* > (s); }
-    FastIO &operator<<(char* s) { return this->operator<<<char* > (s); }
+    FastIO &operator<<(const char* s) {
+        return this->operator<<<const char* > (s);
+    }
+    FastIO &operator<<(char* s) {
+        return this->operator<<<char* > (s);
+    }
 } cio;

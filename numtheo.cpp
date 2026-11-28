@@ -1,33 +1,13 @@
-namespace number_theory
+struct number_theory
 {
-    int p{998244353}, fac_[1000006] {1}, fact_, inv_[1000006] {0, 1}, invt_{1};
-
-    void swap(auto &a, auto &b) noexcept
+    static void swap(auto &a, auto &b) noexcept
     {
         a ^= b;
         b ^= a;
         a ^= b;
     }
 
-    inline int fac(const int n)
-    {
-        if (n <= fact_)
-            return fac_[n];
-        for (fact_++; fact_ < n; fact_++)
-            fac_[fact_] = fac_[fact_ - 1] * fact_ % p;
-        return fac_[n] = fac_[n - 1] * n % p;
-    }
-
-    inline int pow(int a, int b)
-    {
-        int r{1};
-        for (; b; a = a * a % p, b >>= 1)
-            if (b & 1)
-                r = r * a % p;
-        return r;
-    }
-
-    int exgcd(int a, int b, int &x, int &y)
+    static int exgcd(int a, int b, int &x, int &y)
     {
         if (a == 0 && b == 0)
         {
@@ -96,14 +76,28 @@ namespace number_theory
         return g;
     }
 
+    int p;
+    vector<int> fc{1}, iv{0, 1};
+
+    number_theory(int p = 998244353) : p{p} {}
+
+    [[nodiscard]] int pow(int a, int b)
+    {
+        int r{1};
+        for (; b; a = a * a % p, b >>= 1)
+            if (b & 1)
+                r = r * a % p;
+        return r;
+    }
+
     // Lucas 非递归实现（基于模 p 的阶乘/逆元预处理）
-    inline int C_mod(int m, int n)
+    [[nodiscard]] int C_mod(int m, int n)
     {
         if (n < 0 || n > m) return 0;
         return fac(m) * 1LL * inv_on(fac(n)) % p * inv_on(fac(m - n)) % p;
     }
 
-    inline int lucas(long long m, long long n)
+    [[nodiscard]] int lucas(long long m, long long n)
     {
         if (n < 0 || n > m) return 0;
         int res = 1;
@@ -122,7 +116,7 @@ namespace number_theory
     }
 
     // 使用扩展（Stein）欧几里得求模逆（不使用辗转相除）
-    inline int inv_on(const int n)
+    [[nodiscard]] int inv_on(const int n)
     {
         int x, y;
         int g = exgcd(n, p, x, y);
@@ -132,12 +126,27 @@ namespace number_theory
         return x;
     }
 
-    inline int inv_off(const int n)
+    int fac(int n)
     {
-        if (n <= invt_)
-            return inv_[n];
-        for (invt_++; invt_ < n; invt_++)
-            inv_[invt_] = (p - p / invt_) * inv_[p % invt_] % p;
-        return inv_[n] = (p - p / n) * inv_[p % n] % p;
+        int i{fc.size()};
+        if (i <= n)
+        {
+            fc.resize(n + 1);
+            for (; i <= n; ++i)
+                fc[i] = fc[i - 1] * i % p;
+        }
+        return fc[n];
     }
-} // namespace number_theory
+
+    int inv_off(int n)
+    {
+        int i{iv.size()};
+        if (i <= n)
+        {
+            iv.resize(n + 1);
+            for (; i <= n; ++i)
+                iv[i] = (p - p / i) * iv[p % i] % p;
+        }
+        return iv[n];
+    }
+};

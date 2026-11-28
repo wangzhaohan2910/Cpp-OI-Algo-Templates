@@ -3,37 +3,44 @@ struct matrix
     const static int p{1000000007};
     int h, w;
     vector<int> v;
+
     matrix(const int &h, const int &w) : h(h), w(w), v(h * w) {}
+
     matrix(initializer_list<initializer_list<int>> l) : h(l.size()), w(begin(l)->size())
     {
         v.reserve(h * w);
         for (const initializer_list<int> &x : l)
             move(begin(x), end(x), back_inserter(v));
     }
+
     [[nodiscard]] int *operator[](const int &x)
     {
         return v.data() + x * w;
     }
+
     [[nodiscard]] const int *operator[](const int &x) const
     {
         return v.data() + x * w;
     }
-    [[nodiscard]] friend matrix operator*(const matrix &lhs, const matrix &rhs)
+
+    [[nodiscard]] matrix operator*(const matrix &x) const
     {
-        if (lhs.w != rhs.h)
+        if (w != x.h)
             return {};
-        matrix res(lhs.h, rhs.w);
-        for (int i{}; i < lhs.h; i++)
-            for (int j{}; j < lhs.w; j++)
-                for (int k{}; k < rhs.w; k++)
-                    res[i][k] += lhs[i][j] * rhs[j][k],
-                                 res[i][k] %= p;
-        return res;
+        matrix r(h, x.w);
+        for (int i{}; i < h; i++)
+            for (int j{}; j < w; j++)
+                for (int k{}; k < x.w; k++)
+                    r[i][k] += (*this)[i][j] * x[j][k],
+                               r[i][k] %= p;
+        return r;
     }
+
     matrix &operator*=(const matrix &rhs) &
     {
         return (*this) = (*this) * rhs;
     }
+
     [[nodiscard]] matrix pow(matrix rhs, int k)
     {
         if (w != rhs.h || rhs.h != rhs.w)
@@ -44,6 +51,7 @@ struct matrix
                 res *= rhs;
         return res;
     }
+
     [[nodiscard]] matrix pow(int k)
     {
         if (h != w)
